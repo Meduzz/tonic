@@ -25,13 +25,13 @@ type (
 
 	// CookieSessionExtractor - allows us to extract sessions from cookies
 	CookieSessionExtractor struct {
-		field string
+		Field string
 	}
 
 	// HeaderSessionExtractor - allows us to extract sessions from headers
 	HeaderSessionExtractor struct {
-		header string
-		prefix string
+		Header string
+		Prefix string
 	}
 
 	// Result - universal return type
@@ -49,15 +49,15 @@ type (
 
 // Read - reads the session value from the cookie
 func (c *CookieSessionExtractor) Read(ctx *gin.Context) string {
-	cookie, _ := ctx.Cookie(c.field)
+	cookie, _ := ctx.Cookie(c.Field)
 	return cookie
 }
 
 // Read - reads the session value from the header
 func (h *HeaderSessionExtractor) Read(ctx *gin.Context) string {
-	session := ctx.GetHeader(h.header)
-	if h.prefix != "" {
-		session = strings.ReplaceAll(session, h.prefix, "")
+	session := ctx.GetHeader(h.Header)
+	if h.Prefix != "" {
+		session = strings.ReplaceAll(session, h.Prefix, "")
 	}
 	return session
 }
