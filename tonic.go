@@ -1,37 +1,28 @@
 package tonic
 
 import (
+	"log"
 	"strings"
 
+	"github.com/Meduzz/wendy"
 	"github.com/gin-gonic/gin"
+	"github.com/tidwall/gjson"
 )
 
 type (
-	// SessionVerifier - Allows us to verify the session
-	SessionVerifier interface {
-		VerifySession(method, path, session string) bool
-	}
-
-	// UserLoader - allows us to load users
-	UserLoader interface {
-		LoadUser(method, path, session string) *User
-	}
-
-	// User - a minimal user abstraction
-	User struct {
-		ID    string
-		Roles []string
-	}
-
-	// CookieSessionExtractor - allows us to extract sessions from cookies
-	CookieSessionExtractor struct {
+	// CookieExtractor - allows us to extract a field from cookies
+	CookieExtractor struct {
 		Field string
 	}
 
-	// HeaderSessionExtractor - allows us to extract sessions from headers
-	HeaderSessionExtractor struct {
+	// HeaderExtractor - allows us to extract a field from headers
+	HeaderExtractor struct {
 		Header string
 		Prefix string
+	}
+
+	BodyExtractor struct {
+		Field string
 	}
 
 	// Result - universal return type
@@ -47,17 +38,50 @@ type (
 	}
 )
 
-// Read - reads the session value from the cookie
-func (c *CookieSessionExtractor) Read(ctx *gin.Context) string {
+// ReadGin - reads the field value from the http cookie
+func (c *CookieExtractor) ReadGin(ctx *gin.Context) string {
 	cookie, _ := ctx.Cookie(c.Field)
 	return cookie
 }
 
-// Read - reads the session value from the header
-func (h *HeaderSessionExtractor) Read(ctx *gin.Context) string {
+// ReadGin - reads the field value from the http (gin) header
+func (h *HeaderExtractor) ReadGin(ctx *gin.Context) string {
 	session := ctx.GetHeader(h.Header)
 	if h.Prefix != "" {
 		session = strings.ReplaceAll(session, h.Prefix, "")
 	}
 	return session
+}
+
+// ReadWendy - reads the field value from the wendy header
+func (h *HeaderExtractor) ReadWendy(request *wendy.Request) string {
+	value := request.Headers[h.Header]
+
+	if h.Prefix != "" {
+		value = strings.ReplaceAll(value, h.Prefix, "")
+	}
+
+	return value
+}
+
+// ReadGin - reads a field value from the http (gin) body and add it to the context under "body".
+func (b *BodyExtractor) ReadGin(ctx *gin.Context) string {
+	raw, err := ctx.GetRawData()
+
+	if err != nil {
+		log.Printf("GetRawData threw error: %v\n", err)
+		return ""
+	}
+
+	ctx.Set("body", raw)
+
+	res := gjson.GetBytes(raw, b.Field)
+
+	return res.String()
+}
+
+// ReadWendy - reads the field value from the wendy body
+func (b *BodyExtractor) ReadWendy(reqeuest *wendy.Request) string {
+	res := gjson.GetBytes(reqeuest.Body, b.Field)
+	return res.String()
 }
