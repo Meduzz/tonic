@@ -82,6 +82,6 @@ func (b *BodyExtractor) ReadGin(ctx *gin.Context) string {
 
 // ReadWendy - reads the field value from the wendy body
 func (b *BodyExtractor) ReadWendy(reqeuest *wendy.Request) string {
-	res := gjson.GetBytes(reqeuest.Body, b.Field)
+	res := gjson.GetBytes(reqeuest.Body.Data, b.Field)
 	return res.String()
 }
